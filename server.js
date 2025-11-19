@@ -1,29 +1,47 @@
-const express = require('express');
-const cors = require('cors');
-const app = express();
+import express from "express";
+import dotenv from "dotenv";
+import OpenAI from "openai";
 
-// middleware
-app.use(cors());
+dotenv.config();
+
+const app = express();
 app.use(express.json());
 
-// test route
-app.get('/', (req, res) => {
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
+// ------------------------------
+// REAL TRANSLATE ENDPOINT 🔥
+// ------------------------------
+app.post("/translate", async (req, res) => {
+  const { text, targetLang } = req.body;
+
+  try {
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: `Translate the user's text into ${targetLang}. 
+                    ONLY return translated text. No brackets. No extras.`
+        },
+        { role: "user", content: text }
+      ]
+    });
+
+    const translated = response.choices[0].message.content.trim();
+    res.json({ translated });
+  } catch (err) {
+    console.error("AI ERROR:", err);
+    res.status(500).json({ error: "Translation failed" });
+  }
+});
+
+app.get("/", (req, res) => {
   res.send("Backend is running! 🚀");
 });
 
-// translate POST route
-app.post('/translate', (req, res) => {
-  const { text } = req.body;
-
-  if (!text) {
-    return res.status(400).json({ error: "No text provided" });
-  }
-
-  // dummy translation
-  const translated = text + " (translated ✔️)";
-  res.json({ translated });
-});
-
-// render uses this port automatically
+// render port
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server running on ${PORT}`));
