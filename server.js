@@ -29,26 +29,20 @@ app.post("/translate", async (req, res) => {
       messages: [
         {
           role: "system",
-          content: `Translate the user's text into ${targetLang}. 
-                    Return ONLY the translation, no extra words.`
+          content: `Translate the following text into ${targetLang}. Return ONLY the translation. No explanations.`,
         },
-        { role: "user", content: text }
+        {
+          role: "user",
+          content: text
+        }
       ]
     });
 
     const translated = response.choices[0].message.content.trim();
     res.json({ translated });
+
   } catch (err) {
-    console.error("AI ERROR:", err);
+    console.error("AI ERROR:", err.response?.data || err.message || err);
     res.status(500).json({ error: "Translation failed" });
   }
 });
-
-// test route
-app.get("/", (req, res) => {
-  res.send("Backend is running! 🔥");
-});
-
-// render port
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
